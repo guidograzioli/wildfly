@@ -1,6 +1,6 @@
 namespace: middleware_automation
 name: wildfly
-version: "0.0.7"
+version: "1.0.2"
 readme: README.md
 authors:
   - Romain Pelisse <belaran@redhat.com>
@@ -18,6 +18,10 @@ tags:
 dependencies:
   middleware_automation.redhat_csp_download: '>=1.1.2'
 repository: https://github.com/ansible-middleware/wildfly
-documentation: https://github.com/ansible-middleware/wildfly
+documentation: https://ansible-middleware.github.io/wildfly
 homepage: https://github.com/ansible-middleware/wildfly
 issues: https://github.com/ansible-middleware/wildfly/issues
+build_ignore:
+  - molecule
+  - docs
+  - .github
