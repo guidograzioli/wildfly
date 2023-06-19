@@ -2,21 +2,15 @@
 - name: Check arguments
   ansible.builtin.assert:
     that:
-      - wildfly_user is defined
       - wildfly_driver.module_dir is defined
     quiet: true
     fail_msg: 'Required variables not provided.'
-
-- name: Set widfly user/group
-  ansible.builtin.set_fact:
-    wildfly_group: "{{ wildfly_user }}"
-  when:
-    - not wildfly_group is defined
 
 - name: "Check module directory: {{ wildfly_driver.module_dir }}"
   ansible.builtin.stat:
     path: "{{ wildfly_driver.module_dir }}"
   register: dest_path
+  become: yes
 
 - name: "Set up module dir for JDBC Driver: {{ wildfly_driver.module_dir }}"
   ansible.builtin.file:
@@ -26,10 +20,11 @@
     owner: "{{ wildfly_user }}"
     group: "{{ wildfly_group }}"
     mode: 0750
+  become: yes
   when:
     - not dest_path.stat.exists
 
-- name: "Retrieve Wildfly JDBC Driver from {{ wildfly_driver.jar_url }}"
+- name: "Retrieve JDBC Driver from {{ wildfly_driver.jar_url }}"
   ansible.builtin.uri:
     url: "{{ wildfly_driver.jar_url }}"
     dest: "{{ wildfly_driver.jar_installation_path }}"

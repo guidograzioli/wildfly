@@ -1,11 +1,14 @@
+---
 namespace: middleware_automation
 name: wildfly
-version: "1.0.3"
+version: "1.3.4"
 readme: README.md
 authors:
   - Romain Pelisse <belaran@redhat.com>
   - Andrew Block <ablock@redhat.com>
   - Harsha Cherukuri <hcheruku@redhat.com>
+  - Guido Grazioli <ggraziol@redhat.com>
+  - Ranabir Chakraborty <rchakrab@redhat.com>
 description: Enable Ansible to provisioning JBoss EAP or Wildfly instances.
 license_file: "LICENSE"
 tags:
@@ -15,14 +18,26 @@ tags:
   - cli
   - server
   - application
+  - runtimes
+  - middleware
+  - a4mw
 dependencies:
-  middleware_automation.redhat_csp_download: '>=1.1.2'
+  middleware_automation.common: '>=1.1.0'
+  ansible.posix: '>=1.5.2'
 repository: https://github.com/ansible-middleware/wildfly
 documentation: https://ansible-middleware.github.io/wildfly
 homepage: https://github.com/ansible-middleware/wildfly
 issues: https://github.com/ansible-middleware/wildfly/issues
 build_ignore:
-  - molecule
+  - .gitignore
   - .github
+  - .ansible-lint
+  - .yamllint
   - '*.tar.gz'
   - '*.zip'
+  - molecule
+  - changelogs
+  - docs/_gh_include
+  - docs/conf.py
+  - docs/roles.rst.template
+  - docs/requirements.yml

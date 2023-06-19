@@ -1,0 +1,4 @@
+---
+- import_playbook: ../../playbooks/validate.yml
+  when:
+    - not eap_enable is defined or not eap_enable

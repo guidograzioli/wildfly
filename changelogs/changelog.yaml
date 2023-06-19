@@ -19,3 +19,211 @@ releases:
 
         '
     release_date: '2022-03-11'
+  1.0.3:
+    changes:
+      breaking_changes:
+      - 'Rename jboss_eap role into wildfly_utils to be consistent with role naming
+        convention `#45 <https://github.com/ansible-middleware/wildfly/pull/45>`_
+
+        '
+      bugfixes:
+      - 'JAVA_HOME should be set according to requested JVM package, or overridden
+        via ``wildfly_java_home`` `#46 <https://github.com/ansible-middleware/wildfly/pull/46>`_
+
+        '
+      - 'Update included role to new name in rhn installation `#51 <https://github.com/ansible-middleware/wildfly/pull/51>`_
+
+        '
+      minor_changes:
+      - 'Rename validation role vars to follow proper convention `#48 <https://github.com/ansible-middleware/wildfly/pull/48>`_
+
+        '
+      - 'wildfly_driver: make variables as default `#39 <https://github.com/ansible-middleware/wildfly/pull/39>`_
+
+        '
+    fragments:
+    - 39.yaml
+    - 45.yaml
+    - 46.yaml
+    - 48.yaml
+    - 51.yaml
+    release_date: '2022-05-27'
+  1.0.4:
+    changes:
+      breaking_changes:
+      - 'Rename variable ``instance_id`` to ``wildfly_instance_id`` and update docs
+        `#52 <https://github.com/ansible-middleware/wildfly/pull/52>`_
+
+        '
+      bugfixes:
+      - 'Add become parameter to tasks that require it `#53 <https://github.com/ansible-middleware/wildfly/pull/53>`_
+
+        '
+    fragments:
+    - 52.yaml
+    - 53.yaml
+    release_date: '2022-06-13'
+  1.0.5:
+    changes:
+      bugfixes:
+      - 'Fix EAP patch apply when yaml configuration is enabled `#59 <https://github.com/ansible-middleware/wildfly/pull/59>`_
+
+        '
+      minor_changes:
+      - 'Add ``wildfly_java_opts`` to set parameters for wfly JVM `#60 <https://github.com/ansible-middleware/wildfly/pull/60>`_
+
+        '
+      - 'Add ``wildfly_statistics_enabled`` var to enable statistics `#58 <https://github.com/ansible-middleware/wildfly/pull/58>`_
+
+        '
+      - 'Add variable ``wildfly_bind_addr_private`` to set private iface bind address
+        `#55 <https://github.com/ansible-middleware/wildfly/pull/55>`_
+
+        '
+      - 'Add variable ``wildfly_multicast_addr`` to set tcp/udp mcast address `#56
+        <https://github.com/ansible-middleware/wildfly/pull/56>`_
+
+        '
+      - 'Added variable for setting management port bind address `#62 <https://github.com/ansible-middleware/wildfly/pull/62>`_
+
+        '
+    fragments:
+    - 55.yaml
+    - 56.yaml
+    - 58.yaml
+    - 59.yaml
+    - 60.yaml
+    - 62.yaml
+    release_date: '2022-06-23'
+  1.0.6:
+    release_date: '2022-07-28'
+  1.1.0:
+    changes:
+      minor_changes:
+      - 'Bump version to 1.1.0 to align with downstream (1.1.0 is identical to 1.0.6
+        upstream) `#67 <https://github.com/ansible-middleware/wildfly/pull/67>`_
+
+        '
+    fragments:
+    - 67.yaml
+    release_date: '2022-08-01'
+  1.2.0:
+    changes:
+      bugfixes:
+      - 'Become in "Check local download archive path" `#74 <https://github.com/ansible-middleware/wildfly/pull/74>`_
+
+        '
+      - 'wildfly_driver: added wildfly_user and wildfly_group to defaults `#77 <https://github.com/ansible-middleware/wildfly/pull/77>`_
+
+        '
+      major_changes:
+      - 'Propagate wildfly_install defaults to driver, systemd and utils roles `#80
+        <https://github.com/ansible-middleware/wildfly/pull/80>`_
+
+        '
+    fragments:
+    - 74.yaml
+    - 77.yaml
+    - 80.yaml
+    release_date: '2022-09-05'
+  1.2.1:
+    changes:
+      release_summary: 'Patch release with internal changes only.
+
+        '
+    release_date: '2022-09-19'
+  1.2.2:
+    changes:
+      bugfixes:
+      - 'Correctly handle server restarts post apply_cp and keycloak_adapter `#94
+        <https://github.com/ansible-middleware/wildfly/pull/94>`_
+
+        '
+      major_changes:
+      - 'wildfly_install: (eap) apply_cp does not depend on systemd `#90 <https://github.com/ansible-middleware/wildfly/pull/90>`_
+
+        '
+      minor_changes:
+      - 'Add elytron adapter install (EAP) `#92 <https://github.com/ansible-middleware/wildfly/pull/92>`_
+
+        '
+      - 'wildfly-systemd: yaml configuration extension accept templates `#91 <https://github.com/ansible-middleware/wildfly/pull/91>`_
+
+        '
+    fragments:
+    - 90.yaml
+    - 91.yaml
+    - 92.yaml
+    - 94.yaml
+    release_date: '2022-12-20'
+  1.3.0:
+    changes:
+      minor_changes:
+      - 'Apply cp options `#99 <https://github.com/ansible-middleware/wildfly/pull/99>`_
+
+        '
+    fragments:
+    - 99.yaml
+    release_date: '2023-02-07'
+  1.3.1:
+    changes:
+      minor_changes:
+      - 'Remove dependency to community.general (not required) `#100 <https://github.com/ansible-middleware/wildfly/pull/100>`_
+
+        '
+    fragments:
+    - 100.yaml
+    release_date: '2023-02-08'
+  1.3.2:
+    changes:
+      minor_changes:
+      - 'Add check for offline installs and allow to specify custom xml config `#108
+        <https://github.com/ansible-middleware/wildfly/pull/108>`_
+
+        '
+      - 'Add support for firewalld `#106 <https://github.com/ansible-middleware/wildfly/pull/106>`_
+
+        '
+      - 'Implement JBossNetwork API client for downloading install archives `#107
+        <https://github.com/ansible-middleware/wildfly/pull/107>`_
+
+        '
+      - 'Install: add prospero as alternative install mechanism `#102 <https://github.com/ansible-middleware/wildfly/pull/102>`_
+
+        '
+      - 'Update default Wildfly version to 28 `#103 <https://github.com/ansible-middleware/wildfly/pull/103>`_
+
+        '
+    fragments:
+    - 102.yaml
+    - 103.yaml
+    - 106.yaml
+    - 107.yaml
+    - 108.yaml
+    release_date: '2023-05-03'
+  1.3.3:
+    changes:
+      bugfixes:
+      - '''.Beta'' in version: the dot is only optional `#119 <https://github.com/ansible-middleware/wildfly/pull/119>`_
+
+        '
+      - 'ISSUE116 - PID File Creation Failure `#118 <https://github.com/ansible-middleware/wildfly/pull/118>`_
+
+        '
+      minor_changes:
+      - 'Check that systemd is running and pidfile exists `#117 <https://github.com/ansible-middleware/wildfly/pull/117>`_
+
+        '
+      - 'elytron_adapter: skip download if file is already present `#120 <https://github.com/ansible-middleware/wildfly/pull/120>`_
+
+        '
+      - 'wildfly_systemd: accept same default vars as wildfly_install `#111 <https://github.com/ansible-middleware/wildfly/pull/111>`_
+
+        '
+    fragments:
+    - 111.yaml
+    - 117.yaml
+    - 118.yaml
+    - 119.yaml
+    - 120.yaml
+    release_date: '2023-06-09'

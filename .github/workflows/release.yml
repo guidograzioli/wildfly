@@ -13,17 +13,21 @@ jobs:
       contents: write
       deployments: write
       packages: write
-      pages: write    
+      pages: write
+    outputs:
+      tag_version: ${{ steps.get_version.outputs.TAG_VERSION }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          token: ${{ secrets.TRIGGERING_PAT }}
 
       - name: Set up Python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
           python-version: "3.x"
+          cache: 'pip'
 
       - name: Get current version
         id: get_version
@@ -80,6 +84,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tag_name: ${{ steps.get_version.outputs.TAG_VERSION }}
           files: "*.tar.gz"
           body_path: gh-release.md
 
@@ -87,7 +92,7 @@ jobs:
     needs: release
     strategy:
       matrix:
-        repo: ['ansible-middleware/flange-demo', 'ansible-middleware/wildfly-cluster-demo', 'ansible-middleware/ansible-middleware-ee', 'ansible-middleware/common_criteria']
+        repo: ['ansible-middleware/flange-demo', 'ansible-middleware/wildfly-cluster-demo', 'ansible-middleware/ansible-middleware-ee']
     runs-on: ubuntu-latest
     steps:
       - name: Repository Dispatch
@@ -95,5 +100,5 @@ jobs:
         with:
           token: ${{ secrets.TRIGGERING_PAT }}
           repository: ${{ matrix.repo }}
-          event-type: "Dependency released - Wildfly v${{ steps.get_version.outputs.TAG_VERSION }}"
-          client-payload: '{ "github": ${{toJson(github)}} }'          
+          event-type: "Dependency released - Wildfly v${{ needs.release.outputs.tag_version }}"
+          client-payload: '{ "github": ${{toJson(github)}} }'

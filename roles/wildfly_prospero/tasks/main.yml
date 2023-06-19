@@ -1,0 +1,83 @@
+---
+- name: "Ensure required parameter(s) are provided."
+  ansible.builtin.assert:
+    that:
+      - wildfly_home is defined
+      - wildfly_prospero_home is defined
+    quiet: True
+      #todo install prospero on target
+
+- name: "Ensure workdir {{ wildfly_prospero_install_dir }} exists."
+  ansible.builtin.file:
+    path: "{{ wildfly_prospero_install_dir }}"
+    state: directory
+    owner: "{{ wildfly_install_user | default(omit) }}"
+    group: "{{ wildfly_install_group | default(omit) }}"
+    mode: 0750
+  become: yes
+
+- name: "Ensure Prospero is properly installed on target."
+  ansible.builtin.unarchive:
+    src: "{{ wildfly_prospero_download_url }}"
+    dest: "{{ wildfly_prospero_install_dir }}"
+    owner: "{{ wildfly_install_user | default(omit) }}"
+    group: "{{ wildfly_install_group | default(omit) }}"
+    remote_src: yes
+  become: yes
+
+- name: "Read target directory information: {{ wildfly_home }}"
+  ansible.builtin.stat:
+    path: "{{ wildfly_home }}"
+  become: yes
+  register: path_to_workdir
+
+- name: "Run Prospero to install server in {{ wildfly_home }}."
+  ansible.builtin.command: >
+    {{ wildfly_prospero_home }}/bin/prospero.sh install \
+    --dir {{ wildfly_home }} --profile wildfly \
+    --manifest {{ wildfly_prospero_manifest_url }}
+  register: prospero_run_results
+  become: true
+  when:
+    - wildfly_home is defined # repl by not is install
+    - not path_to_workdir.stat.exists
+
+- name: "Determine available updates for server in {{ wildfly_home }}"
+  ansible.builtin.command: >
+    {{ wildfly_prospero_home }}/bin/prospero.sh update list \
+    --dir {{ wildfly_home }}
+  register: prospero_run_results
+  become: true
+  changed_when: false
+  when:
+    - wildfly_home is defined
+    - path_to_workdir.stat.exists
+    - wildfly_prospero_update is defined
+
+- name: "Check if any updates are available"
+  ansible.builtin.command: |
+    echo "{{ prospero_run_results.stdout }}" | grep 'No updates found.'
+  register: updates_available
+  ignore_errors: true
+  changed_when: false
+
+- name: "Run prospero to update server in {{ wildfly_home }}."
+  ansible.builtin.command: >
+    {{ wildfly_prospero_home }}/bin/prospero.sh update perform \
+    --dir {{ wildfly_home }} -y
+  register: prospero_run_results
+  become: true
+  when:
+    - wildfly_home is defined
+    - path_to_workdir.stat.exists
+    - wildfly_prospero_update is defined
+    - updates_available.rc == 1
+
+- name: "Ensure that {{ wildfly_home }} belongs to appropriate user - if defined."
+  ansible.builtin.file:
+    path: "{{ wildfly_home }}"
+    recurse: yes
+    owner: "{{ wildfly_install_user }}"
+    group: "{{ wildfly_install_group | default(wildfly_install_user) }}"
+  when:
+    - wildfly_install_user is defined

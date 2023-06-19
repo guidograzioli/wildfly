@@ -24,11 +24,12 @@
   ansible.builtin.stat:
     path: "{{ full_path_to_archive }}"
   register: archive_path
+  become: yes
 
-- name: "Retrieve archive from Wildfly website: {{ wildfly_download_baseurl }}"
-  ansible.builtin.include_tasks: install/wildfly.yml
+- name: "Retrieve archive from website: {{ wildfly_download_baseurl }}"
+  ansible.builtin.include_tasks: install/web.yml
   when:
-    - not wildfly_jboss_eap_enable
+    - eap_enable is not defined or not eap_enable
     - not wildfly_install.rpm is defined
     - not wildfly_offline_install
     - archive_path.stat is defined
@@ -36,11 +37,11 @@
 
 - name: "Retrieve archive from RHN"
   ansible.builtin.include_tasks: install/rhn.yml
-  vars:
-    rhn_id_file: "{{ wildfly_install.rhn.id }}"
   when:
-    - wildfly_jboss_eap_enable
     - not wildfly_offline_install
+    - rhn_username is defined
+    - rhn_password is defined
+    - eap_enable is defined and eap_enable
     - archive_path.stat is defined
     - not archive_path.stat.exists
 
@@ -69,26 +70,29 @@
     - local_archive_path.stat.exists
   become: yes
 
-- block:
+- name: Perform installation
+  block:
     - name: "Check target archive: {{ full_path_to_archive }}"
       ansible.builtin.stat:
         path: "{{ full_path_to_archive }}"
       register: is_archive_file_created
+      become: yes
 
-    - name: "Read target directory information: {{ wildfly_install.home }}"
-      ansible.builtin.stat:
-        path: "{{ wildfly_install.home }}"
-      register: path_to_workdir
-
-    - name: "Check target directory state: {{ wildfly_install.home }}"
+    - name: "Verify target archive state: {{ full_path_to_archive }}"
       ansible.builtin.assert:
         that:
           - is_archive_file_created is defined and is_archive_file_created.stat is defined
           - is_archive_file_created.stat.exists
         quiet: true
-        fail_msg: "Archive file does NOT exists: {{ full_path_to_archive }}"
+        fail_msg: "Archive file does NOT exist: {{ full_path_to_archive }}"
 
-    - name: "Extract Wildfly files from {{ full_path_to_archive }} into {{ wildfly_install.workdir }}."
+    - name: "Read target directory information: {{ wildfly_install.home }}"
+      ansible.builtin.stat:
+        path: "{{ wildfly_install.home }}/bin"
+      become: yes
+      register: path_to_workdir
+
+    - name: "Extract files from {{ full_path_to_archive }} into {{ wildfly_install.workdir }}."
       become: yes
       become_user: "{{ wildfly_install.user }}"
       ansible.builtin.unarchive:
@@ -97,7 +101,7 @@
         owner: "{{ wildfly_install.user }}"
         group: "{{ wildfly_install.group }}"
         remote_src: yes
-        creates: "{{ wildfly_install.home }}"
+        creates: "{{ wildfly_install.home }}/bin"
       when:
         - new_version_downloaded.changed or not path_to_workdir.stat.exists
 
@@ -112,6 +116,7 @@
 - name: "Read information on server home directory: {{ wildfly_install.home }}"
   ansible.builtin.stat:
     path: "{{ wildfly_install.home }}"
+  become: yes
   register: is_wfly_home
 
 - name: "Check state of server home directory: {{ wildfly_install.home }}"
@@ -123,3 +128,56 @@
       - is_wfly_home.stat.exists
     quiet: true
     fail_msg: "Server home directory has not been created: {{ wildfly_install.home }}."
+
+- name: Set instance name
+  ansible.builtin.set_fact:
+    instance_name: "{{ wildfly_instance_name | default('wildfly') }}"
+  when:
+    - instance_name is not defined
+
+- name: "Deploy custom configuration"
+  ansible.builtin.template:
+    src: "{{ wildfly_install.config_custom }}"
+    dest: "{{ wildfly_install.home }}/standalone/configuration/"
+    group: "{{ wildfly_install.group }}"
+    owner: "{{ wildfly_install.user }}"
+    mode: 0640
+  become: yes
+  when: wildfly_install.config_custom | length > 0
+
+- name: "Deploy configuration"
+  ansible.builtin.copy:
+    src: "{{ wildfly_install.home }}/standalone/configuration/{{ wildfly_install.config }}"
+    dest: "{{ wildfly_install.home }}/standalone/configuration/{{ instance_name }}.xml"
+    group: "{{ wildfly_install.group }}"
+    owner: "{{ wildfly_install.user }}"
+    mode: 0640
+    remote_src: true
+    force: "{{ wildfly_install_force_reinstall_config_base }}"
+  become: yes
+
+- name: "Install EAP cumulative patch"
+  when:
+    - eap_apply_cp is defined and eap_apply_cp
+    - eap_enable is defined and eap_enable
+  block:
+    - name: "Apply latest cumulative patch"
+      ansible.builtin.include_role:
+        name: wildfly_utils
+        tasks_from: apply_cp.yml
+
+- name: "Install EAP elytron adapter"
+  when:
+    - eap_elytron_adapter is defined and eap_elytron_adapter
+    - eap_enable is defined and eap_enable
+  block:
+    - name: "Ensure required parameters for elytron adapter are provided."
+      ansible.builtin.assert:
+        that:
+          - eap_elytron_adapter_version is defined
+        quiet: "Missing required parameters for elytron adapter"
+
+    - name: "Install elytron adapter"
+      ansible.builtin.include_role:
+        name: wildfly_utils
+        tasks_from: keycloak_adapter.yml

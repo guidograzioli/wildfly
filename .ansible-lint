@@ -6,6 +6,7 @@ exclude_paths:
   - docs/
   - .ansible-lint
   - .yamllint
+  - playbooks/roles/
 
 rulesdir:
    - ../../ansible-lint-custom-rules/rules/
@@ -22,11 +23,21 @@ warn_list:
   - role_vars_start_with_role_name
   - vars_in_vars_files_have_valid_names
 #  - vars_should_not_be_used
-#  - experimental
+  - jinja[spacing]
+  - experimental
   - ignore-errors
   - no-handler
   - no-log-password
   - unnamed-task
+  - schema
+  - meta-no-tags
+  - name[template]
+  - name[casing]
+  - template-instead-of-copy
+  - fqcn[keyword]
+  - no-changed-when
+  - key-order[task]
+  - var-naming[no-role-prefix]
 
 use_default_rules: true
 parseable: true
