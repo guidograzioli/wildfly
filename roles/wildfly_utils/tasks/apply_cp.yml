@@ -22,7 +22,7 @@
     path: "{{ patch_archive }}"
   register: patch_archive_path
   when: eap_patch_version is defined
-  become: yes
+  become: true
 
 - name: Check local download archive path
   ansible.builtin.stat:
@@ -53,21 +53,21 @@
       register: rhn_products
       no_log: "{{ omit_rhn_output | default(true) }}"
       delegate_to: localhost
-      run_once: yes
+      run_once: true
 
     - name: Determine patch versions list
       ansible.builtin.set_fact:
         filtered_versions: "{{ rhn_products.results | map(attribute='file_path') | select('match', '^[^/]*/jboss-eap-.*[0-9]*[.][0-9]*[.][0-9]*.*$') | map('regex_replace','[^/]*/jboss-eap-([0-9]*[.][0-9]*[.][0-9]*)-.*','\\1' ) | list | unique }}"
       when: eap_patch_version is not defined or eap_patch_version | length == 0
       delegate_to: localhost
-      run_once: yes
+      run_once: true
 
     - name: Determine latest version
       ansible.builtin.set_fact:
          eap_latest_version: "{{ filtered_versions | middleware_automation.common.version_sort | last }}"
       when: eap_patch_version is not defined or eap_patch_version | length == 0
       delegate_to: localhost
-      run_once: yes
+      run_once: true
 
     - name: Determine install zipfile from search results
       ansible.builtin.set_fact:
@@ -76,7 +76,7 @@
         patch_version: "{{ eap_latest_version }}"
       when: eap_patch_version is not defined or eap_patch_version | length == 0
       delegate_to: localhost
-      run_once: yes
+      run_once: true
 
     - name: "Determine selected patch from supplied version: {{ eap_patch_version }}"
       ansible.builtin.set_fact:
@@ -85,13 +85,13 @@
         patch_version: "{{ eap_patch_version }}"
       when: eap_patch_version is defined
       delegate_to: localhost
-      run_once: yes
+      run_once: true
 
     - name: "Check remote downloaded archive: {{ patches_repository }}/{{ patch_bundle }}"
       ansible.builtin.stat:
         path: "{{ patches_repository }}/{{ patch_bundle }}"
       register: remote_archive_path
-      become: yes
+      become: true
 
     - name: Download Red Hat EAP patch
       middleware_automation.common.product_download: # noqa risky-file-permissions delegated, uses controller host user
@@ -101,8 +101,8 @@
         dest: "{{ local_path.stat.path }}/{{ patch_bundle }}"
       no_log: "{{ omit_rhn_output | default(true) }}"
       delegate_to: localhost
-      run_once: yes
-      when: 
+      run_once: true
+      when:
         - remote_archive_path is defined
         - not remote_archive_path.stat.exists
 
@@ -114,7 +114,7 @@
   ansible.builtin.stat:
     path: "{{ patch_archive }}"
   register: patch_info
-  become: yes
+  become: true
 
 - name: Copy patch archive to target nodes
   ansible.builtin.copy:
@@ -122,17 +122,22 @@
     dest: "{{ patch_archive }}"
     owner: "{{ wildfly_user }}"
     group: "{{ wildfly_group }}"
-    mode: 0640
+    mode: '0640'
+    selevel: s0
+    serole: object_r
+    setype: usr_t
+    seuser: system_u
   register: new_version_downloaded
   when:
     - not patch_info.stat.exists
-  become: yes
+  become: true
+  notify: exec_restorecon
 
 - name: "Check patch state"
   ansible.builtin.stat:
     path: "{{ patch_archive }}"
   register: patch_info
-  become: yes
+  become: true
 
 - name: "Set checksum file path for patch"
   ansible.builtin.set_fact:
@@ -144,7 +149,7 @@
   ansible.builtin.stat:
     path: "{{ patch_checksum_file }}"
   register: last_patch_status
-  become: yes
+  become: true
 
 - name: Print when patch has been applied already
   ansible.builtin.debug:
@@ -163,28 +168,35 @@
             port: "{{ jboss_cli_controller_port }}"
             timeout: 1
       rescue:
-        - name: Set instance name
-          ansible.builtin.set_fact:
-            instance_name: "{{ wildfly_instance_name | default('wildfly') }}"
-          when:
-            - instance_name is not defined
         - name: "Deploy configuration"
           ansible.builtin.copy:
             src: "{{ wildfly_home }}/standalone/configuration/{{ wildfly_config_base }}"
-            dest: "{{ wildfly_home }}/standalone/configuration/{{ instance_name }}.xml"
+            dest: "{{ wildfly_home }}/standalone/configuration/{{ wildfly_instance_name }}.xml"
             group: "{{ wildfly_group }}"
             owner: "{{ wildfly_user }}"
-            mode: 0640
+            mode: '0640'
             remote_src: true
             force: false
-          become: yes
+            selevel: s0
+            serole: object_r
+            setype: usr_t
+            seuser: system_u
+          become: true
+          notify: exec_restorecon
         - name: "Start wildfly for patching"
-          ansible.builtin.command: "{{ wildfly_home }}/bin/standalone.sh -c {{ instance_name }}.xml -Djboss.server.config.dir={{ wildfly_home }}/standalone/configuration/ -Djboss.server.base.dir={{ wildfly_home }}/standalone"
+          ansible.builtin.shell: |
+            set -o pipefail
+            {{ wildfly_home }}/bin/standalone.sh -c {{ wildfly_instance_name }}.xml \
+                -Djboss.server.config.dir={{ wildfly_home }}/standalone/configuration/ \
+                -Djboss.server.base.dir={{ wildfly_home }}/standalone \
+                -Djboss.socket.binding.port-offset={{ wildfly_port_range_offset }}
+          environment:
+            JAVA_HOME: "/etc/alternatives/jre_{{ wildfly_java_package_name | regex_search('(?<=java-)[0-9.]+') }}"
           changed_when: True
           async: 180
           poll: 0
           register: apply_cp_process
-          become: yes
+          become: true
           become_user: "{{ wildfly_user }}"
         - name: "Wait for management interface is reachable"
           ansible.builtin.wait_for:
@@ -206,6 +218,8 @@
         jboss_home: "{{ wildfly_home }}"
         jboss_cli_query: "'patch apply {{ apply_options }} {{ patch_archive }}'"
         jboss_cli_timeout: 30
+        jboss_cli_notify: exec_restorecon
+        jboss_cli_changed_when: true
 
     - name: "Display patching result"
       ansible.builtin.debug:
@@ -223,10 +237,15 @@
             content: "Patch v{{ patch_version }}"
             owner: "{{ wildfly_user }}"
             group: "{{ wildfly_group }}"
-            mode: 0640
+            mode: '0640'
+            selevel: s0
+            serole: object_r
+            setype: usr_t
+            seuser: system_u
           when:
             - not last_patch_status.stat.exists
-          become: yes
+          become: true
+          notify: exec_restorecon
 
         - name: Set latest patch file
           ansible.builtin.copy:
@@ -234,45 +253,64 @@
             content: "{{ patch_version }}"
             owner: "{{ wildfly_user }}"
             group: "{{ wildfly_group }}"
-            mode: 0640
+            mode: '0640'
+            selevel: s0
+            serole: object_r
+            setype: usr_t
+            seuser: system_u
           when:
             - not last_patch_status.stat.exists
-          become: yes
+          become: true
+          notify: exec_restorecon
 
     - name: "Restart server to ensure patch content is running"
-      ansible.builtin.include_tasks: jboss_cli.yml
-      vars:
-        jboss_home: "{{ wildfly_home }}"
-        jboss_cli_query: "'shutdown --restart'"
-        jboss_cli_timeout: 60
-      when:
-        - not wildfly_no_restart_after_patch
-        - cli_result.rc == 0
+      block:
+        - name: "Restart server to ensure patch content is running"
+          ansible.builtin.include_tasks: jboss_cli.yml
+          vars:
+            jboss_home: "{{ wildfly_home }}"
+            jboss_cli_query: "'shutdown --restart'"
+            jboss_cli_timeout: 20
+            jboss_cli_become_user: "{{ wildfly_user }}"
+          when:
+            - not wildfly_no_restart_after_patch
+            - cli_result.rc == 0
 
-    - name: "Wait for management interface is reachable"
-      ansible.builtin.wait_for:
-        host: "{{ jboss_cli_controller_host }}"
-        port: "{{ jboss_cli_controller_port }}"
-        timeout: 60
-        delay: 10
-        sleep: 5
+        - name: "Wait for management interface is reachable"
+          ansible.builtin.wait_for:
+            host: "{{ jboss_cli_controller_host }}"
+            port: "{{ jboss_cli_controller_port }}"
+            timeout: 20
+            delay: 10
+            sleep: 5
 
-    - name: "Stop service if it was started for patching"
-      ansible.builtin.include_tasks: jboss_cli.yml
-      vars:
-        jboss_home: "{{ wildfly_home }}"
-        jboss_cli_query: "'shutdown'"
-        jboss_cli_timeout: 60
-      when:
-        - apply_cp_process is defined
-        - not eap_no_restart_after_patch
-        - cli_result.rc == 0
+        - name: "Stop service if it was started for patching"
+          ansible.builtin.include_tasks: jboss_cli.yml
+          vars:
+            jboss_home: "{{ wildfly_home }}"
+            jboss_cli_query: "'shutdown'"
+            jboss_cli_timeout: 30
+            jboss_cli_become_user: "{{ wildfly_user }}"
+          when:
+            - apply_cp_process is defined
+            - not eap_no_restart_after_patch
+            - cli_result.rc == 0
 
-    - name: "Display resulting output"
-      ansible.builtin.debug:
-        msg: "{{ cli_result.stdout }}"
-      when:
-        - cli_result.stdout | length > 0
+      rescue:
+        - name: "Enable elytron when on jre17"
+          ansible.builtin.include_tasks: jboss_cli.yml
+          vars:
+            jboss_home: "{{ wildfly_home }}"
+            jboss_cli_file: "{{ wildfly_home }}/docs/examples/enable-elytron-se17.cli"
+            jboss_cli_timeout: 60
+            jboss_cli_connect: False
+            jboss_cli_extra_param: config
+            jboss_cli_extra_param_value: "{{ wildfly_instance_name }}.xml"
+            jboss_cli_become_user: "{{ wildfly_user }}"
+          when:
+            - wildfly_java_package_name | regex_search('(?<=java-)[0-9]+') == '17'
+            - patch_version.split('.')[0:2] | join('.') == '7.4'
+            - patch_version.split('.')[2] | int >= 7
 
   rescue:
     - name: "Show resulting output"

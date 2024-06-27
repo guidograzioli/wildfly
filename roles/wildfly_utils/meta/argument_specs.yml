@@ -26,11 +26,15 @@ argument_specs:
                 description: "posix group for wildfly"
                 type: "str"
             wildfly_version:
-                default: "27.0.0.Final"
+                default: "32.0.0.Final"
                 description: "Wildfly version to install"
                 type: "str"
+            wildfly_install_workdir:
+                default: "/opt/wildfly/"
+                description: "Root directory for installation, path where the install zipfile is extracted"
+                type: "str"
             wildfly_home:
-                required: True
+                default: "{{ wildfly_install_workdir }}wildfly-{{ wildfly_version }}/"
                 description: "Wildfly installation directory"
                 type: "str"
             jboss_home:
@@ -41,6 +45,14 @@ argument_specs:
                 default: False
                 description: "When true, skip restarting after applying a cumulative patch"
                 type: "bool"
+            wildfly_selinux_enabled:
+                default: False
+                description: "Whether to deploy on a selinux enforcing target host"
+                type: "bool"
+            wildfly_port_range_offset:
+                default: 0
+                description: "Increment for `jboss.socket.binding.port-offset`"
+                type: "int"
     downstream:
         options:
             eap_enable:
@@ -48,7 +60,7 @@ argument_specs:
                 description: "Enable install of Red Hat JBoss EAP"
                 type: "bool"
             eap_apply_cp:
-                default: false
+                default: True
                 description: "Whether to apply the latest cumulative patch on top of baseline version"
                 type: "bool"
             eap_version:
@@ -64,11 +76,11 @@ argument_specs:
                 description: "Root directory for installation"
                 type: "str"
             eap_home:
-                default: "{{ eap_install_workdir }}jboss-eap-{{ (eap_version | split('.'))[0:2] | join('.') }}/"
+                default: "{{ eap_install_workdir }}jboss-eap-{{ (eap_version.split('.'))[0:2] | join('.') }}/"
                 description: "Red Hat EAP installation path"
                 type: "str"
             eap_offline_install:
-                default: True
+                default: False
                 description: "Whether to install from local archive"
                 type: "bool"
             eap_apply_cp_verbose:
@@ -82,6 +94,26 @@ argument_specs:
             eap_elytron_adapter_version:
                 default: "7.6.0"
                 description: "Version of SSO (keycloak) adapter to install"
+                type: "str"
+            eap_elytron_adapter_archive_filename:
+                default: "rh-sso-{{ eap_elytron_adapter_version }}-eap7-adapter-dist.zip"
+                description: "SSO (keycloak) adapter install filename"
+                type: "str"
+            eap_selinux_enabled:
+                default: True
+                description: "Whether to deploy on a selinux enforcing target host"
+                type: "bool"
+            eap_prospero_version:
+                default: "1.1.6.Final-redhat-00001"
+                description: "Version of Prospero to use"
+                type: "str"
+            eap_prospero_name:
+                default: "jboss-eap-installation-manager"
+                description: "Constant for the name of the prospero tool"
+                type: "str"
+            eap_prospero_profile_name:
+                default: "eap-8.0"
+                description: "Name of the Wildfly profile for the server to install"
                 type: "str"
     jboss_cli:
         options:
@@ -107,3 +139,69 @@ argument_specs:
                 required: False
                 description: "Seconds to wait for jboss-cli connection to server"
                 type: "int"
+            jboss_cli_connect:
+                required: False
+                description: "Whether to pass -c to jboss-cli.sh"
+                type: 'bool'
+            jboss_cli_extra_param:
+                required: False
+                description: "An extra parameter name passed with -D to jboss-cli.sh"
+                type: 'str'
+            jboss_cli_extra_param_value:
+                required: False
+                description: "The value for the extra parameter specified in jboss_cli_extra_param"
+                type: 'str'
+            jboss_cli_notify:
+                required: False
+                description: "The handler to notify if the cli operation returns changes"
+                type: 'str'
+            jboss_cli_changed_when:
+                required: False
+                description: "Whether to always return changed (or not) on changed_when"
+                type: 'bool'
+            jboss_cli_become_user:
+                required: False
+                description: "The user account to execute jboss-cli with"
+                type: 'str'
+    prospero/main:
+        options:
+            wildfly_prospero_version:
+                default: "1.3.0.Beta1"
+                description: "Version of Prospero to use"
+                type: "str"
+            wildfly_prospero_name:
+                default: "prospero"
+                description: "Constant for the name of the prospero tool"
+                type: "str"
+            wildfly_prospero_install_dir:
+                default: "/opt/prospero"
+                description: "Path to the installation dir for Prospero"
+                type: "str"
+            wildfly_prospero_profile_name:
+                default: "wildfly"
+                description: "Name of the Wildfly profile for the server to install"
+                type: "str"
+            wildfly_prospero_scenario_enable:
+                default: true
+                description: "Specificy to Molecule if it should run the Prospero scenario"
+                type: "bool"
+            wildfly_prospero_archive_name:
+                default: "{{ wildfly_prospero_name }}-{{ wildfly_prospero_version }}.zip"
+                description: "Name of the Prospero archive"
+                type: "str"
+            wildfly_prospero_home:
+                default: "{{ wildfly_prospero_install_dir }}/{{ wildfly_prospero_name }}-{{ wildfly_prospero_version }}"
+                description: "Home of the prospero tool"
+                type: "str"
+            wildfly_prospero_install_manifest_dir:
+                default: "{{ wildfly_install_workdir }}/manifest"
+                description: "Path on target to the Prospero manifest"
+                type: "str"
+            wildfly_prospero_download_url:
+                default: "https://github.com/wildfly-extras/prospero/releases/download/{{ wildfly_prospero_version }}/prospero-{{ wildfly_prospero_version }}.zip"
+                description: "URL to download Prospero"
+                type: "str"
+            wildfly_prospero_download_check_ssl:
+                default: false
+                description: "Should Ansible check SSL when downloading Prospero"
+                type: "bool"

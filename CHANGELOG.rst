@@ -1,10 +1,141 @@
-===========================================
-middleware_automation.wildfly Release Notes
-===========================================
+============================================
+middleware\_automation.wildfly Release Notes
+============================================
 
 .. contents:: Topics
 
 This changelog describes changes after version 0.0.7.
+
+v1.5.2
+======
+
+Major Changes
+-------------
+
+- Add app deployments to several Molecule scenarios `#237 <https://github.com/ansible-middleware/wildfly/pull/237>`_
+- prospero: rm role and move content to wildfly_utils `#227 <https://github.com/ansible-middleware/wildfly/pull/227>`_
+
+Minor Changes
+-------------
+
+- App deploy to trigger cluster formation and verification (upstream CI only) `#221 <https://github.com/ansible-middleware/wildfly/pull/221>`_
+- Skip pidfile validation `#217 <https://github.com/ansible-middleware/wildfly/pull/217>`_
+- eap: EAP8 should defaults to prospero `#245 <https://github.com/ansible-middleware/wildfly/pull/245>`_
+- install: allow user to change path on controller to store zips `#216 <https://github.com/ansible-middleware/wildfly/pull/216>`_
+
+Bugfixes
+--------
+
+- Add become_user to jboss_cli `#229 <https://github.com/ansible-middleware/wildfly/pull/229>`_
+- Use prospero 1.3.0.Beta1 `#239 <https://github.com/ansible-middleware/wildfly/pull/239>`_
+- use own config directory for colocated instances `#226 <https://github.com/ansible-middleware/wildfly/pull/226>`_
+- wildfly_validation: fixup logic of pidfile verification `#244 <https://github.com/ansible-middleware/wildfly/pull/244>`_
+
+v1.5.1
+======
+
+Major Changes
+-------------
+
+- Set pid file for systemd to /var/run/{{ instance }} or allow for custom pid file location `#190 <https://github.com/ansible-middleware/wildfly/pull/190>`_
+
+Minor Changes
+-------------
+
+- Add selinux attributes `#205 <https://github.com/ansible-middleware/wildfly/pull/205>`_
+- Add wait_for logic in systemd unit `#207 <https://github.com/ansible-middleware/wildfly/pull/207>`_
+- Add wildfly_validation logic for colocated cluster `#211 <https://github.com/ansible-middleware/wildfly/pull/211>`_
+- Allow to use different names for nodeId, instance name, systemd unit name `#192 <https://github.com/ansible-middleware/wildfly/pull/192>`_
+- Enable Prospero molecule scenario to run `#181 <https://github.com/ansible-middleware/wildfly/pull/181>`_
+- Externalize the jdbc drivers list from the main playbook, plus add a missing template for the migration role `#204 <https://github.com/ansible-middleware/wildfly/pull/204>`_
+- Implementation of the uninstall role, along with documentation and molecule scenario `#194 <https://github.com/ansible-middleware/wildfly/pull/194>`_
+- Validate ``wildfly_node_id`` length and default to ``inventory_hostname_short`` `#195 <https://github.com/ansible-middleware/wildfly/pull/195>`_
+- prospero: update README and remove duplicated call to wildfly_user `#200 <https://github.com/ansible-middleware/wildfly/pull/200>`_
+
+Bugfixes
+--------
+
+- Fix uninstall_role to work, out of the box, with the wildfly_install defaults. `#197 <https://github.com/ansible-middleware/wildfly/pull/197>`_
+- Fix wildfly_install changing ownership of system directories `#210 <https://github.com/ansible-middleware/wildfly/pull/210>`_
+- JBoss EAP 7.4.7+ patching fails on openjdk17 if elytron is not enabled `#203 <https://github.com/ansible-middleware/wildfly/pull/203>`_
+- Wildfly user account should be in wildfly_group as primary group `#202 <https://github.com/ansible-middleware/wildfly/pull/202>`_
+
+v1.5.0
+======
+
+Minor Changes
+-------------
+
+- Add check for prospero installed on host `#175 <https://github.com/ansible-middleware/wildfly/pull/175>`_
+- Download prospero on controller node and copy it to target servers `#167 <https://github.com/ansible-middleware/wildfly/pull/167>`_
+- Few enhancements around the OpenJDK dependency handling `#168 <https://github.com/ansible-middleware/wildfly/pull/168>`_
+- Generate wildfly manifest to be used with wildfly `#158 <https://github.com/ansible-middleware/wildfly/pull/158>`_
+- New prospero name parameter ``wildfly_prospero_name`` `#165 <https://github.com/ansible-middleware/wildfly/pull/165>`_
+- Validate the service running on an offset port `#162 <https://github.com/ansible-middleware/wildfly/pull/162>`_
+- systemd: handling of privilege escalation and service restart `#179 <https://github.com/ansible-middleware/wildfly/pull/179>`_
+
+Breaking Changes / Porting Guide
+--------------------------------
+
+- Set minimum ansible version >= 2.14 `#173 <https://github.com/ansible-middleware/wildfly/pull/173>`_
+
+Bugfixes
+--------
+
+- Fix Ansible Hub documentation links `#161 <https://github.com/ansible-middleware/wildfly/pull/161>`_
+
+v1.4.3
+======
+
+Minor Changes
+-------------
+
+- Use alternatives instead of rpm to determine java_home `#149 <https://github.com/ansible-middleware/wildfly/pull/149>`_
+
+v1.4.2
+======
+
+Minor Changes
+-------------
+
+- Remove unrequired vars from playbooks/playbook.yml `#144 <https://github.com/ansible-middleware/wildfly/pull/144>`_
+
+v1.4.0
+======
+
+Major Changes
+-------------
+
+- wildfly_driver: remove defaults in favor of required parameters `#138 <https://github.com/ansible-middleware/wildfly/pull/138>`_
+- wildfly_driver: rename parameters from ``jdbc_*`` to ``wildfly_driver_*`` `#142 <https://github.com/ansible-middleware/wildfly/pull/142>`_
+
+Minor Changes
+-------------
+
+- Cleanup and reorganize Prospero playbooks `#136 <https://github.com/ansible-middleware/wildfly/pull/136>`_
+- Update to Wildfly 29 `#135 <https://github.com/ansible-middleware/wildfly/pull/135>`_
+
+Bugfixes
+--------
+
+- Fix validation role so it can be used with remote nodes. `#131 <https://github.com/ansible-middleware/wildfly/pull/131>`_
+- Set ``wildfly_offline_install`` default to False, ``eap_apply_cp`` to True `#133 <https://github.com/ansible-middleware/wildfly/pull/133>`_
+- Update references to ``split`` filter `#140 <https://github.com/ansible-middleware/wildfly/pull/140>`_
+- Update yaml_configuration syntax (became less permissive) `#130 <https://github.com/ansible-middleware/wildfly/pull/130>`_
+- Workaround java-11 bugzilla #2224411 `#127 <https://github.com/ansible-middleware/wildfly/pull/127>`_
+
+v1.3.4
+======
+
+Minor Changes
+-------------
+
+- wildfly_systemd: detect Java home path on different os_family `#125 <https://github.com/ansible-middleware/wildfly/pull/125>`_
+
+Bugfixes
+--------
+
+- Do not re-download elytron adapter if present `#124 <https://github.com/ansible-middleware/wildfly/pull/124>`_
 
 v1.3.3
 ======
@@ -76,7 +207,6 @@ Release Summary
 ---------------
 
 Patch release with internal changes only.
-
 
 v1.2.0
 ======
@@ -161,7 +291,6 @@ Release Summary
 
 Minor enhancements, and documentation updates.
 
-
 v1.0.1
 ======
 
@@ -170,7 +299,6 @@ Release Summary
 
 Minor enhancements, and documentation updates.
 
-
 v1.0.0
 ======
 
@@ -178,4 +306,3 @@ Release Summary
 ---------------
 
 This is the first stable release of the ``middleware_automation.wildfly`` collection.
-

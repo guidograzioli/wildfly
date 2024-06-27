@@ -12,7 +12,7 @@
 
 - name: Set adapter filename
   ansible.builtin.set_fact:
-    patch_filename: "{{ override_adapter_filename | default('rh-sso-' + eap_elytron_adapter_version + '-eap7-adapter-dist.zip') }}"
+    patch_filename: "{{ override_adapter_filename | default(eap_elytron_adapter_archive_filename) }}"
 
 - name: Set adapter destination directory
   ansible.builtin.set_fact:
@@ -47,19 +47,19 @@
       register: rhn_products
       no_log: "{{ omit_rhn_output | default(true) }}"
       delegate_to: localhost
-      run_once: yes
+      run_once: true
 
     - name: Determine install zipfile from search results
       ansible.builtin.set_fact:
         rhn_filtered_products: "{{ rhn_products.results | selectattr('file_path', 'match', '[^/]*/' + patch_filename + '$') }}"
       delegate_to: localhost
-      run_once: yes
+      run_once: true
 
     - name: "Check remote downloaded archive: {{ path_to_patch }}"
       ansible.builtin.stat:
         path: "{{ path_to_patch }}"
       register: remote_archive_path
-      become: yes
+      become: true
 
     - name: Download Red Hat Single Sign-On Adapter
       middleware_automation.common.product_download: # noqa risky-file-permissions delegated, uses controller host user
@@ -69,7 +69,7 @@
         dest: "{{ local_path.stat.path }}/{{ patch_filename }}"
       no_log: "{{ omit_rhn_output | default(true) }}"
       delegate_to: localhost
-      run_once: yes
+      run_once: true
       when:
         - remote_archive_path is defined
         - not remote_archive_path.stat.exists
@@ -89,13 +89,18 @@
     dest: "{{ path_to_patch }}"
     owner: "{{ wildfly_user }}"
     group: "{{ wildfly_group }}"
-    mode: 0640
+    mode: '0640'
+    selevel: s0
+    serole: object_r
+    setype: usr_t
+    seuser: system_u
   register: new_version_downloaded
   when:
     - not patch_archive_path.stat.exists
     - local_archive_path.stat is defined
     - local_archive_path.stat.exists
-  become: yes
+  become: true
+  notify: exec_restorecon
 
 - name: Extract Adapter zipfile
   ansible.builtin.unarchive:
@@ -103,9 +108,14 @@
     dest: "{{ wildfly_home }}"
     owner: "{{ wildfly_user }}"
     group: "{{ wildfly_group }}"
-    remote_src: yes
+    remote_src: true
     creates: "{{ wildfly_home }}/modules/system/add-ons/keycloak"
-  become: yes
+    selevel: s0
+    serole: object_r
+    setype: usr_t
+    seuser: system_u
+  become: true
+  notify: exec_restorecon
 
 - name: Perform installation
   block:
@@ -117,27 +127,29 @@
             port: "{{ jboss_cli_controller_port }}"
             timeout: 1
       rescue:
-        - name: Set instance name
-          ansible.builtin.set_fact:
-            instance_name: "{{ wildfly_instance_name | default('wildfly') }}"
-          when:
-            - instance_name is not defined
         - name: "Deploy configuration"
           ansible.builtin.copy:
             src: "{{ wildfly_home }}/standalone/configuration/{{ wildfly_config_base }}"
-            dest: "{{ wildfly_home }}/standalone/configuration/{{ instance_name }}.xml"
+            dest: "{{ wildfly_home }}/standalone/configuration/{{ wildfly_instance_name }}.xml"
             group: "{{ wildfly_group }}"
             owner: "{{ wildfly_user }}"
-            mode: 0640
+            mode: '0640'
             remote_src: true
             force: false
-          become: yes
+          become: true
         - name: "Start wildfly for adapter installation"
-          ansible.builtin.command: "{{ wildfly_home }}/bin/standalone.sh -c {{ instance_name }}.xml -Djboss.server.config.dir={{ wildfly_home }}/standalone/configuration/ -Djboss.server.base.dir={{ wildfly_home }}/standalone"
+          ansible.builtin.shell: |
+            set -o pipefail
+            {{ wildfly_home }}/bin/standalone.sh -c {{ wildfly_instance_name }}.xml \
+                -Djboss.server.config.dir={{ wildfly_home }}/standalone/configuration/ \
+                -Djboss.server.base.dir={{ wildfly_home }}/standalone \
+                -Djboss.socket.binding.port-offset={{ wildfly_port_range_offset }}
+          environment:
+            JAVA_HOME: "/etc/alternatives/jre_{{ wildfly_java_package_name | regex_search('(?<=java-)[0-9.]+') }}"
           changed_when: True
           async: 180
           poll: 0
-          become: yes
+          become: true
           become_user: "{{ wildfly_user }}"
           register: adapter_install_process
         - name: "Wait for management interface is reachable"

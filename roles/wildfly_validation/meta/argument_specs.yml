@@ -17,12 +17,20 @@ argument_specs:
                 default: "8080"
                 description: "Server HTTP port"
                 type: "str"
+            wildfly_https_port:
+                default: "8443"
+                description: "Server HTTPS port"
+                type: "str"
             wildfly_version:
-                default: "27.0.0.Final"
+                default: "32.0.0.Final"
                 description: "Wildfly version to install"
                 type: "str"
+            wildfly_install_workdir:
+                default: "/opt/wildfly/"
+                description: "Root directory for installation, path where the install zipfile is extracted"
+                type: "str"
             wildfly_home:
-                default: "/opt/wildfly/wildfly-{{ wildfly_version }}/"
+                default: "{{ wildfly_install_workdir }}wildfly-{{ wildfly_version }}/"
                 description: "Wildfly installation directory"
                 type: "str"
             wildfly_standard_sockets_validation_query:
@@ -37,6 +45,22 @@ argument_specs:
                 default: "/subsystem=ee/service=default-bindings:read-attribute(name=jms-connection-factory)"
                 type: "str"
                 description: "CLI query used to validate the JMS connection factory"
+            wildfly_validation_queries:
+                default: []
+                type: "list"
+                description: "CLI queries used to validate configuration. List of dicts [{query => <jboss cli command>, expected_result => <expected string result of the cli op>, expected_result_undefined => <if defined, then check if the result is 'undefined'> }]"
+            wildfly_pidfile_homedir:
+                description: "Directory that will contain the PID file"
+                default: "/run/wildfly"
+                type: "str"
+            wildfly_validation_systemd_pidfile_require_privilege_escalation:
+                default: True
+                description: "Whether or not accessing the pidfile created by Systemd will require root privileges"
+                type: "bool"
+            wildfly_basedir_prefix:
+                default: "{{ wildfly_home }}"
+                description: "Install base directory for instance, ie. for colocated installations"
+                type: "str"
     downstream:
         options:
             eap_enable:
@@ -44,7 +68,7 @@ argument_specs:
                 description: "Enable install of Red Hat JBoss EAP"
                 type: "bool"
             eap_apply_cp:
-                default: false
+                default: True
                 description: "Whether to apply the latest cumulative patch on top of baseline version"
                 type: "bool"
             eap_version:
@@ -64,6 +88,6 @@ argument_specs:
                 description: "Root directory for installation"
                 type: "str"
             eap_home:
-                default: "{{ eap_install_workdir }}jboss-eap-{{ (eap_version | split('.'))[0:2] | join('.') }}/"
+                default: "{{ eap_install_workdir }}jboss-eap-{{ (eap_version.split('.'))[0:2] | join('.') }}/"
                 description: "Red Hat EAP installation path"
                 type: "str"

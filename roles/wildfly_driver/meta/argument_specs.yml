@@ -1,32 +1,32 @@
 argument_specs:
     main:
         options:
-            jdbc_driver_module_dir:
-                default: "{{ wildfly_home }}/modules/{{ jdbc_driver_module_name | replace('.', '/') }}/main"
+            wildfly_driver_module_dir:
+                default: "{{ wildfly_home }}/modules/{{ wildfly_driver.module_name | replace('.', '/') }}/main"
                 description: "Path for module installation"
                 type: "str"
-            jdbc_driver_version:
-                default: "9.4.1212"
+            wildfly_driver_version:
+                required: true
                 description: "Version of jdbc driver to download"
                 type: "str"
-            jdbc_driver_jar_filename:
-                default: "postgresql-{{ jdbc_driver_version }}.jar"
+            wildfly_driver_jar_filename:
+                required: true
                 description: "Filename of jdbc driver to download"
                 type: "str"
-            jdbc_driver_jar_url:
-                default: "https://repo.maven.apache.org/maven2/org/postgresql/postgresql/{{ jdbc_driver_version }}/postgresql-{{ jdbc_driver_version }}.jar"
+            wildfly_driver_jar_url:
+                required: true
                 description: "URL for jdbc driver download"
                 type: "str"
-            jdbc_driver_jar_installation_path:
-                default: "{{ jdbc_driver_module_dir }}/{{ jdbc_driver_jar_filename }}"
+            wildfly_driver_jar_installation_path:
+                default: "{{ wildfly_driver_module_dir }}/{{ wildfly_driver_jar_filename }}"
                 description: "Path for jdbc driver installation"
                 type: "str"
-            jdbc_driver_module_name:
-                default: "org.postgresql"
+            wildfly_driver_module_name:
+                required: true
                 description: "Name for the jdbc driver module"
                 type: "str"
             wildfly_version:
-                default: "27.0.0.Final"
+                default: "32.0.0.Final"
                 description: "Wildfly version to install"
                 type: "str"
             wildfly_home:
@@ -56,6 +56,6 @@ argument_specs:
                 description: "Red Hat EAP version to install"
                 type: "str"
             eap_home:
-                default: "/opt/jboss_eap/jboss-eap-{{ (eap_version | split('.'))[0:2] | join('.') }}/"
+                default: "/opt/jboss_eap/jboss-eap-{{ (eap_version.split('.'))[0:2] | join('.') }}/"
                 description: "Red Hat EAP installation path"
                 type: "str"

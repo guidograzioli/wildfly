@@ -1,10 +1,14 @@
 argument_specs:
     main:
         options:
-            wildfly_version:
-                default: "27.0.0.Final"
-                description: "Wildfly version to install"
+            wildfly_service_systemd_env_file:
+                description: "Path to systemd service environment file"
                 type: "str"
+                default: "{{ wildfly_service_config_file_location }}/{{ wildfly_service_name }}{{ wildfly_systemd_conf_file_suffix }}"
+            wildfly_service_systemd_file:
+                description: "Path to systemd service configuration file"
+                type: "str"
+                default: "{{ wildfly_systemd_service_config_location}} /{{ wildfly_service_name }}{{ wildfly_systemd_service_config_file_suffix }}"
             wildfly_user:
                 default: "wildfly"
                 description: "posix user account for wildfly service"
@@ -13,12 +17,16 @@ argument_specs:
                 default: "{{ wildfly_user }}"
                 description: "posix group for wildfly service"
                 type: "str"
+            wildfly_version:
+                default: "32.0.0.Final"
+                description: "Wildfly version to install"
+                type: "str"
             wildfly_install_workdir:
                 default: "/opt/wildfly/"
                 description: "Root directory for installation"
                 type: "str"
             wildfly_home:
-                default: "{{ wildfly_install_workdir }}wildfly-{{ wildfly_version }}/"
+                default: "{{ wildfly_install_workdir }}wildfly-{{ wildfly_version }}"
                 description: "Wildfly installation directory"
                 type: "str"
             wildfly_config_base:
@@ -30,92 +38,125 @@ argument_specs:
                 description: "Custom standalone.xml config to be copied to target instance and used as base"
                 type: "str"
             wildfly_port_range_offset:
-                default: 100
+                default: 0
                 description: "Increment for `jboss.socket.binding.port-offset`"
                 type: "int"
-            wildfly_systemd_unit_enabled:
-                default: true
-                description: "Enable systemd unit to autostart after a reboot"
-                type: "bool"
             wildfly_java_package_name:
                 default: "java-11-openjdk-headless"
                 description: "RHEL java rpm package"
                 type: "str"
-            wildfly_java_home:
+            wildfly_systemd_java_home:
                 description: "JAVA_HOME of installed JRE, leave empty for using specified wildfly_java_package_name RPM path"
                 type: "str"
             wildfly_java_opts:
+                default: "-Xmx1024M -Xms512M"
                 description: "Additional settings for the JVM running wildfly"
                 type: "str"
-                default: "-Xmx1024M -Xms512M"
+            wildfly_systemd_unit_enabled:
+                default: true
+                description: "Enable systemd unit to autostart after a reboot"
+                type: "bool"
+            wildfly_systemd_require_privilege_escalation:
+                default: true
+                description: "Specify if Ansible needs to escalate privilege to interact with Systemd"
+                type: "bool"
             wildfly_systemd_service_config_location:
-                default: "/usr/lib/systemd/system"
+                default: "/etc/systemd/system"
                 description: "Path for systemd unit file"
                 type: "str"
             wildfly_systemd_service_config_file_suffix:
-                # line 10 of wildfly_systemd/defaults/main.yml
                 default: ".service"
                 description: "Systemd unit file extension"
                 type: "str"
             wildfly_systemd_conf_file_suffix:
-                # line 11 of wildfly_systemd/defaults/main.yml
                 default: ".conf"
                 description: "Suffix for systemd conf file"
                 type: "str"
             wildfly_systemd_service_config_file_template:
-                # line 12 of wildfly_systemd/defaults/main.yml
                 default: "templates/wfly.service.j2"
                 description: "Template for systemd unit"
                 type: "str"
             wildfly_service_config_file_template:
-                # line 14 of wildfly_systemd/defaults/main.yml
                 default: "templates/wfly.conf.j2"
                 description: "Template for systemd config"
                 type: "str"
             wildfly_service_config_file_location:
-                # line 15 of wildfly_systemd/defaults/main.yml
-                default: "/etc/"
+                default: "/etc/sysconfig"
                 description: "Path for wildfly systemd unit file"
                 type: "str"
             wildfly_enable_yml_config:
-                # line 17 of wildfly_systemd/defaults/main.yml
                 default: false
                 description: "Enable yaml file configuration feature (WFCORE5343)"
                 type: "bool"
             wildfly_yml_configs:
-                # line 18 of wildfly_systemd/defaults/main.yml
                 default: "[]"
                 description: "List of filenames for wildfly configuration bootstrap"
                 type: "list"
-            wildfly_instance_id:
-                # line 17 of wildfly_systemd/defaults/main.yml
-                required: false
-                description: "ID for instance when colocating EAP deployments"
-                type: "int"
-            wildfly_instance_name:
-                # line 17 of wildfly_systemd/defaults/main.yml
-                required: false
-                description: "Name for instance when colocating EAP deployments"
+            wildfly_yml_configs_repository:
+                description: "Path to the folder containing the YAML config files"
                 type: "str"
             wildfly_bind_addr:
-                description: "Bind address for listening to public network"
                 default: "0.0.0.0"
+                description: "Bind address for listening to public network"
                 type: "str"
             wildfly_bind_addr_private:
-                description: "Bind address for listening to private network"
                 default: "127.0.0.1"
-                type: "str"
-            wildfly_multicast_addr:
-                description: "Multicast address for jgroup cluster discovery"
-                default: "230.0.0.4"
+                description: "Bind address for listening to private network"
                 type: "str"
             wildfly_bind_addr_management:
-                description: "Bind address for management console port"
                 default: "127.0.0.1"
+                description: "Bind address for management console port"
+                type: "str"
+            wildfly_multicast_addr:
+                default: "230.0.0.4"
+                description: "Multicast address for jgroup cluster discovery"
                 type: "str"
             wildfly_statistics_enabled:
-                default: False
+                default: false
                 description: "Whether to enable statistics"
+                type: "bool"
+            wildfly_instance_name:
+                default: "wildfly"
+                description: "Name of the wildfly instance"
+                type: "str"
+            wildfly_node_id:
+                default: "{{ inventory_hostname_short }}"
+                description: "Name of the node to be passed as jboss.tx.node.id, must be unique in a cluster; max length 23 characters"
+                type: "str"
+            wildfly_basedir_prefix:
+                default: "{{ wildfly_home }}"
+                description: "Install base directory for instance, ie. for colocated installations"
+                type: "str"
+            wildfly_pidfile_homedir:
+                description: "Directory that will contain the PID file"
+                default: "/run/wildfly"
+                type: "str"
+            wildfly_selinux_enabled:
+                default: False
+                description: "Whether to deploy on a selinux enforcing target host"
+            wildfly_systemd_wait_port:
+                default: "9990"
+                description: "The port to wait for when starting up wildfly if wildfly_systemd_wait_for_port is true"
+                type: "int"
+            wildfly_systemd_startup_message_id:
+                default: "WFLYSRV0025"
+                description: "WildFly Message id Identifier for the server startup message"
+                type: "str"
+            wildfly_systemd_wait_for_timeout:
+                default: "60"
+                description: "WildFly instance systemd wait timeout"
+                type: "int"
+            wildfly_systemd_wait_for_delay:
+                default: "10"
+                description: "WildFly instance systemd delay timeout"
+                type: "int"
+            wildfly_systemd_wait_for_port:
+                default: False
+                description: "Whether systemd unit should wait for wildfly port before returning"
+                type: "bool"
+            wildfly_systemd_wait_for_log:
+                default: False
+                description: "Whether systemd unit should wait for wildfly service to be up in logs"
                 type: "bool"
     downstream:
         options:
@@ -124,7 +165,7 @@ argument_specs:
                 description: "Enable install of Red Hat JBoss EAP"
                 type: "bool"
             eap_apply_cp:
-                default: false
+                default: True
                 description: "Whether to apply the latest cumulative patch on top of baseline version"
                 type: "bool"
             eap_version:
@@ -144,11 +185,11 @@ argument_specs:
                 description: "Root directory for installation"
                 type: "str"
             eap_home:
-                default: "{{ eap_install_workdir }}jboss-eap-{{ (eap_version | split('.'))[0:2] | join('.') }}/"
+                default: "{{ eap_install_workdir }}jboss-eap-{{ (eap_version.split('.'))[0:2] | join('.') }}/"
                 description: "Red Hat EAP installation path"
                 type: "str"
             eap_offline_install:
-                default: True
+                default: False
                 description: "Whether to install from local archive"
                 type: "bool"
             eap_elytron_adapter:
@@ -159,3 +200,7 @@ argument_specs:
                 default: "7.6.0"
                 description: "Version of SSO (keycloak) adapter to install"
                 type: "str"
+            eap_selinux_enabled:
+                default: True
+                description: "Whether to deploy on a selinux enforcing target host"
+                type: "bool"

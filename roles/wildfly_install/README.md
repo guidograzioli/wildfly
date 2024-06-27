@@ -1,8 +1,8 @@
 wildfly install role
 ====================
 
-A role to automate the installation the Wildfly JEE server, including retrieving the
-source archive.
+A role to automate the download and installation of the Wildfly JEE server.
+
 
 Requirements
 ------------
@@ -15,18 +15,18 @@ Role Defaults
 
 | Variable | Description | Default |
 |:---------|:------------|:--------|
-|`wildfly_version`| Wildfly version to install | `27.0.0.Final` |
+|`wildfly_version`| Wildfly version to install | `32.0.0.Final` |
 |`wildfly_archive_filename`| Wildfly download archive name | `wildfly-{{ wildfly_version }}.zip` |
 |`wildfly_download_baseurl`| Base URL for wildfly download | `https://github.com/wildfly/wildfly/releases/download` |
-|`wildfly_install_workdir`| TODO document argument | `/opt/wildfly/` |
-|`wildfly_home`| Wildfly installation directory | `{{ wildfly_install_workdir }}wildfly-{{ wildfly_version }}/` |
+|`wildfly_install_workdir`| Wildfly installation directory (where the server files are unzipped) | `/opt/wildfly/` |
+|`wildfly_home`| Wildfly installation directory (WILDFLY_HOME) | `{{ wildfly_install_workdir }}wildfly-{{ wildfly_version }}/` |
 |`wildfly_install_download_url`| Wildfly download URL | `{{ wildfly_download_baseurl }}/{{ wildfly_version }}/{{ wildfly_archive_filename }}` |
 |`wildfly_archive_dir`| Target download directory | `{{ wildfly_install_workdir }}` |
 |`wildfly_config_base`| Base standalone.xml config for instance | `standalone.xml` unless `wildfly_config_custom_file` is used |
 |`wildfly_config_custom_file`| Custom standalone.xml config to be copied to target instance and used as base | `''` |
 |`wildfly_user`| posix user account for wildfly | `wildfly` |
 |`wildfly_group`| posix group for wildfly | `{{ wildfly_user }}` |
-|`wildfly_java_package_name`| RHEL java rpm package | `java-11-openjdk` |
+|`wildfly_java_package_name`| RHEL java rpm package | `java-11-openjdk-headless` |
 |`wildfly_offline_install`| Whether to install from local archive | `False` |
 
 
@@ -37,7 +37,6 @@ Role Variables
 
 <!--end argument_specs-->
 
-## Dependencies
 
 ## Example Playbooks
 

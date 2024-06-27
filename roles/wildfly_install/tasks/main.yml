@@ -5,23 +5,8 @@
 - name: "Ensure required local user exists."
   ansible.builtin.include_tasks: user.yml
 
-- name: "Ensure workdir {{ wildfly_install.workdir }} exists."
-  ansible.builtin.file:
-    path: "{{ wildfly_install.workdir }}"
-    state: directory
-    owner: "{{ wildfly_install.user }}"
-    group: "{{ wildfly_install.group }}"
-    mode: 0750
-  become: yes
-
-- name: "Ensure archive_dir {{ wildfly_install.archive_dir }} exists."
-  ansible.builtin.file:
-    path: "{{ wildfly_install.archive_dir }}"
-    state: directory
-    owner: "{{ wildfly_install.user }}"
-    group: "{{ wildfly_install.group }}"
-    mode: 0750
-  become: yes
+- name: "Ensure required directories exists."
+  ansible.builtin.include_tasks: prepdirs.yml
 
 - name: "Ensure server is installed"
   ansible.builtin.include_tasks: install.yml
@@ -37,7 +22,7 @@
   ansible.builtin.stat:
     path: "{{ wildfly_install.home }}"
   register: is_wildfly_home
-  become: yes
+  become: "{{ wildfly_install_require_privileges_escalation }}"
 
 - name: Validate conditions
   ansible.builtin.assert:
@@ -50,4 +35,4 @@
   ansible.builtin.include_role:
     name: wildfly_firewalld
   when:
-    - wildfly_app_firewalld_enabled is defined and wildfly_app_firewalld_enabled
+    - wildfly_firewalld_enabled is defined and wildfly_firewalld_enabled

@@ -1,12 +1,6 @@
 ---
-dependency:
-  name: shell
-  command: ansible-galaxy install -r molecule/requirements.yml --force
 driver:
   name: docker
-lint: |
-  ansible-lint --version
-  ansible-lint -v
 platforms:
   - name: instance
     image: registry.access.redhat.com/ubi8/ubi-init:latest
@@ -17,11 +11,18 @@ platforms:
       - 8080:8080
     published_ports:
       - 0.0.0.0:8080:8080/TCP
+    packages:
+      - sudo
 provisioner:
   name: ansible
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+    ssh_connection:
+      pipelining: false
   playbooks:
+    prepare: ../prepare.yml
     converge: converge.yml
-    prepare: prepare.yml
     verify: verify.yml
   inventory:
     host_vars:
@@ -37,11 +38,9 @@ verifier:
   name: ansible
 scenario:
   test_sequence:
-    - dependency
     - cleanup
     - destroy
     - syntax
-    - lint
     - create
     - prepare
     - converge

@@ -1,22 +1,19 @@
 ---
-- name: Converge
+- name: Ensure Wildfly is install and running as a service
   hosts: all
-  collections:
-    - middleware_automation.wildfly
-    - middleware_automation.common
-    - ansible.posix
+  vars_files:
+    - vars/vars.yml
   roles:
     - wildfly_install
     - wildfly_systemd
-    - wildfly_driver
-    - wildfly_utils
   tasks:
     - name: Install second driver with wildfly_driver role
       ansible.builtin.include_role:
         name: wildfly_driver
+      when: jdbc_drivers is defined and jdbc_drivers | length > 0
       vars:
-        jdbc_driver_module_dir: "{{ wildfly_home }}/modules/org/mariadb/main"
-        jdbc_driver_version: 2.7.4
-        jdbc_driver_jar_filename: "mariadb-java-client-{{ jdbc_driver_version }}.jar"
-        jdbc_driver_jar_url: "https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/{{ jdbc_driver_version }}/mariadb-java-client-{{ jdbc_driver_version }}.jar"
-        jdbc_driver_module_name: "org.mariadb"
+        wildfly_driver_module_name: "{{ item.name }}"
+        wildfly_driver_version: "{{ item.version }}"
+        wildfly_driver_jar_filename: "{{ item.jar_file }}"
+        wildfly_driver_jar_url: "{{ item.url }}"
+      loop: "{{ jdbc_drivers }}"
